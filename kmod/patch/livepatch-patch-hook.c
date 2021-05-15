@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2013-2014 Josh Poimboeuf <jpoimboe@redhat.com>
- * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com> 
+ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -72,6 +72,18 @@
 # endif
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
 # define HAVE_SIMPLE_ENABLE
+#endif
+
+#ifdef RHEL_RELEASE_CODE
+# if RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 2)
+#  define HAVE_KLP_REPLACE
+# endif
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
+# define HAVE_KLP_REPLACE
+#endif
+
+#ifndef KLP_REPLACE_ENABLE
+#define KLP_REPLACE_ENABLE true
 #endif
 
 /*
@@ -385,6 +397,9 @@ static int __init patch_init(void)
 		goto out;
 	lpatch->mod = THIS_MODULE;
 	lpatch->objs = lobjects;
+#ifdef HAVE_KLP_REPLACE
+	lpatch->replace = KLP_REPLACE_ENABLE;
+#endif
 #if defined(__powerpc64__) && defined(HAVE_IMMEDIATE)
 	lpatch->immediate = true;
 #endif
