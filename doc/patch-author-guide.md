@@ -39,6 +39,13 @@ recommended that when patching a system which has already been patched, the
 second patch should be a cumulative upgrade which is a superset of the first
 patch.
 
+Since upstream kernel 5.1, livepatch supports a "replace" flag to help the
+management of cumulative patches. With the flag set, the kernel will load
+the cumulative patch and unload all existing patches in one transition.
+kpatch-build enables the replace flag by default. If replace behavior is
+not desired, the user can disable it with -R|--non-replace.
+
+
 Data structure changes
 ----------------------
 
@@ -231,7 +238,7 @@ index 9bff3b28c357..18374fd35bd9 100644
 @@ -1751,6 +1751,8 @@ struct task_struct *fork_idle(int cpu)
  	return task;
  }
- 
+
 +#include <linux/livepatch.h>
 +#define KPATCH_SHADOW_NEWPID 0
  /*
@@ -249,7 +256,7 @@ index 9bff3b28c357..18374fd35bd9 100644
 +						 NULL, NULL);
 +		if (newpid)
 +			*newpid = ctr++;
- 
+
  		trace_sched_process_fork(current, p);
 ```
 
@@ -266,7 +273,7 @@ index 39684c79e8e2..fe0259d057a3 100644
 @@ -394,13 +394,19 @@ static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
  	seq_putc(m, '\n');
  }
- 
+
 +#include <linux/livepatch.h>
 +#define KPATCH_SHADOW_NEWPID 0
  static inline void task_context_switch_counts(struct seq_file *m,
@@ -281,7 +288,7 @@ index 39684c79e8e2..fe0259d057a3 100644
 +	if (newpid)
 +		seq_printf(m, "newpid:\t%d\n", *newpid);
  }
- 
+
  static void task_cpus_allowed(struct seq_file *m, struct task_struct *task)
 ```
 
@@ -296,7 +303,7 @@ index 148a7842928d..44b6fe61e912 100644
 @@ -791,6 +791,8 @@ static void check_stack_usage(void)
  static inline void check_stack_usage(void) {}
  #endif
- 
+
 +#include <linux/livepatch.h>
 +#define KPATCH_SHADOW_NEWPID 0
  void do_exit(long code)
@@ -305,7 +312,7 @@ index 148a7842928d..44b6fe61e912 100644
 @@ -888,6 +890,8 @@ void do_exit(long code)
  	check_stack_usage();
  	exit_thread();
- 
+
 +	klp_shadow_free(tsk, KPATCH_SHADOW_NEWPID, NULL);
 +
  	/*
@@ -367,7 +374,7 @@ semantic of the associated object:
         aio_put_req(iocb);
 +       if (klp_shadow_get(ctx, KPATCH_SHADOW_REQS_ACTIVE_V2))
 +               atomic_dec(&ctx->reqs_active);
- 
+
         /*
          * We have to order our ring_info tail store above and test
 ```
@@ -376,9 +383,9 @@ Likewise, shadow variable non-existence can be tested to continue applying the
 *old* data semantic:
 ```
 @@ -310,7 +312,8 @@ static void free_ioctx(struct kioctx *ctx)
- 
+
                 avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
- 
+
 -               atomic_sub(avail, &ctx->reqs_active);
 +               if (!klp_shadow_get(ctx, KPATCH_SHADOW_REQS_ACTIVE_V2))
 +                       atomic_sub(avail, &ctx->reqs_active);
@@ -387,14 +394,14 @@ Likewise, shadow variable non-existence can be tested to continue applying the
         }
 @@ -757,6 +762,8 @@ static long aio_read_events_ring(struct kioctx *ctx,
         pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
- 
+
         atomic_sub(ret, &ctx->reqs_active);
 +       if (!klp_shadow_get(ctx, KPATCH_SHADOW_REQS_ACTIVE_V2))
 +               atomic_sub(ret, &ctx->reqs_active);
  out:
         mutex_unlock(&ctx->ring_lock);
 ```
- 
+
 The previous example can be extended to use shadow variable storage to handle
 locking semantic changes.  Consider the [upstream fix](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=1d147bfa64293b2723c4fec50922168658e613ba)
 for CVE-2014-2706, which added a `ps_lock` to `struct sta_info` to protect
@@ -411,7 +418,7 @@ index decd30c1e290..758533dda4d8 100644
 @@ -287,6 +287,8 @@ static int sta_prepare_rate_control(struct ieee80211_local *local,
  	return 0;
  }
- 
+
 +#include <linux/livepatch.h>
 +#define KPATCH_SHADOW_PS_LOCK 2
  struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
@@ -422,12 +429,12 @@ index decd30c1e290..758533dda4d8 100644
  	struct ieee80211_tx_latency_bin_ranges *tx_latency;
  	int i;
 +	spinlock_t *ps_lock;
- 
+
  	sta = kzalloc(sizeof(*sta) + local->hw.sta_data_size, gfp);
  	if (!sta)
 @@ -330,6 +333,10 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
  	rcu_read_unlock();
- 
+
  	spin_lock_init(&sta->lock);
 +	ps_lock = klp_shadow_alloc(sta, KPATCH_SHADOW_PS_LOCK,
 +				   sizeof(*ps_lock), gfp, NULL, NULL);
@@ -449,7 +456,7 @@ index 97a02d3f7d87..0edb0ed8dc60 100644
 @@ -459,12 +459,15 @@ static int ieee80211_use_mfp(__le16 fc, struct sta_info *sta,
  	return 1;
  }
- 
+
 +#include <linux/livepatch.h>
 +#define KPATCH_SHADOW_PS_LOCK 2
  static ieee80211_tx_result
@@ -459,7 +466,7 @@ index 97a02d3f7d87..0edb0ed8dc60 100644
  	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
  	struct ieee80211_local *local = tx->local;
 +	spinlock_t *ps_lock;
- 
+
  	if (unlikely(!sta))
  		return TX_CONTINUE;
 @@ -478,6 +481,23 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
@@ -560,7 +567,7 @@ local. That way patching the function doesn't inadvertently reset the variable
 to zero; instead the variable keeps its old value.
 
 To work around this limitation one needs to retain the reference to the static local.
-This might be as simple as adding the variable back in the patched function in a 
+This might be as simple as adding the variable back in the patched function in a
 non-functional way and ensuring the compiler doesn't optimize it away.
 
 Code removal
@@ -579,7 +586,7 @@ diff -Nupr src.orig/fs/proc/cmdline.c src/fs/proc/cmdline.c
 @@ -3,15 +3,15 @@
  #include <linux/proc_fs.h>
  #include <linux/seq_file.h>
- 
+
 -static int cmdline_proc_show(struct seq_file *m, void *v)
 -{
 -	seq_printf(m, "%s\n", saved_command_line);
@@ -590,13 +597,13 @@ diff -Nupr src.orig/fs/proc/cmdline.c src/fs/proc/cmdline.c
 +	seq_printf(m, "%s kpatch\n", saved_command_line);
 +	return 0;
 +}
- 
+
  static int cmdline_proc_open(struct inode *inode, struct file *file)
  {
 -	return single_open(file, cmdline_proc_show, NULL);
 +	return single_open(file, cmdline_proc_show_v2, NULL);
  }
- 
+
  static const struct file_operations cmdline_proc_fops = {
 ```
 will generate an equivalent kpatch module to this patch (dead
@@ -608,7 +615,7 @@ diff -Nupr src.orig/fs/proc/cmdline.c src/fs/proc/cmdline.c
 @@ -9,9 +9,15 @@ static int cmdline_proc_show(struct seq_
  	return 0;
  }
- 
+
 +static int cmdline_proc_show_v2(struct seq_file *m, void *v)
 +{
 +	seq_printf(m, "%s kpatch\n", saved_command_line);
@@ -620,7 +627,7 @@ diff -Nupr src.orig/fs/proc/cmdline.c src/fs/proc/cmdline.c
 -	return single_open(file, cmdline_proc_show, NULL);
 +	return single_open(file, cmdline_proc_show_v2, NULL);
  }
- 
+
  static const struct file_operations cmdline_proc_fops = {
 ```
 In both versions, `kpatch-build` will determine that only
