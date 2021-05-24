@@ -6,9 +6,9 @@ kpatch-build \- build script
 .SH SYNOPSIS
 kpatch-build [options] <patch file>
 .SH DESCRIPTION
-This script takes a patch based on the version of the kernel 
-currently running and creates a kernel module that will replace 
-modified functions in the kernel such that the patched code takes 
+This script takes a patch based on the version of the kernel
+currently running and creates a kernel module that will replace
+modified functions in the kernel such that the patched code takes
 effect.
 
 .SH OPTIONS
@@ -21,7 +21,7 @@ effect.
 
 -r|--sourcerpm
    Specify kernel source RPM
- 
+
 -s|--sourcedir
    Specify kernel source directory
 
@@ -51,6 +51,10 @@ effect.
    Enable patching out-of-tree module,
    specify current version of module
 
+-R|--non-replace
+   Disable replace flag of KLP
+   (replace is on by default)
+
 --skip-cleanup
    Skip post-build cleanup
 
@@ -71,6 +75,5 @@ No known bugs.
 .SH AUTHOR
 Udo Seidel (udoseidel@gmx.de)
 .SH COPYRIGHT
-Copyright (C) 2014: Seth Jennings <sjenning@redhat.com>, Copyright (C) 
+Copyright (C) 2014: Seth Jennings <sjenning@redhat.com>, Copyright (C)
 2013,2014:  Josh Poimboeuf <jpoimboe@redhat.com>
-
