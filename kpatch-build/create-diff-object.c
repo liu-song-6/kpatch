@@ -1987,6 +1987,7 @@ static int bug_table_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "BUG_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2002,6 +2003,7 @@ static int ex_table_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "EX_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2017,6 +2019,7 @@ static int jump_table_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "JUMP_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2032,6 +2035,7 @@ static int printk_index_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "PRINTK_INDEX_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2047,6 +2051,7 @@ static int parainstructions_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "PARA_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2062,6 +2067,7 @@ static int altinstructions_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "ALT_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2082,6 +2088,7 @@ static int static_call_sites_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "STATIC_CALL_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
@@ -2107,6 +2114,7 @@ static int fixup_entry_group_size(struct kpatch_elf *kelf, int offset)
 		size = atoi(str);
 	}
 
+	fprintf(stderr, "FIXUP_STRUCT_SIZE=%d\n", size);
 	return size;
 }
 
