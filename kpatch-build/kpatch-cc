@@ -75,6 +75,11 @@ elif [[ "$TOOLCHAINCMD" =~ ^(.*-)?ld || "$TOOLCHAINCMD" =~ ^(.*-)?ld.lld ]] ; th
 					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/module/$relobj"
 					break
 					;;
+				vmlinux.o)
+					cp -f "$obj" "$KPATCH_GCC_TEMPDIR/orig/$relobj"
+					echo "$relobj" >> "$KPATCH_GCC_TEMPDIR/changed_objs"
+					break
+					;;
 				.tmp_vmlinux*|vmlinux)
 					args+=(--warn-unresolved-symbols)
 					break

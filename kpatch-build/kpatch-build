@@ -57,6 +57,7 @@ declare -a PATCH_LIST
 APPLIED_PATCHES=0
 OOT_MODULE=
 KLP_REPLACE=1
+USE_LTO=0
 
 GCC="${CROSS_COMPILE:-}gcc"
 CLANG="${CROSS_COMPILE:-}clang"
@@ -629,6 +630,7 @@ find_kobj() {
 			*.ko)
 				return
 				;;
+			vmlinux.o|\
 			*/built-in.o|\
 			*/built-in.a|\
 			arch/x86/kernel/ebda.o|\
@@ -642,6 +644,9 @@ find_kobj() {
 		esac
 
 		find_parent_obj "$KOBJFILE"
+		if [[  "$USE_LTO" -eq 1 ]] ; then
+			PARENT=vmlinux.o
+		fi
 		[[ -z "$PARENT" ]] && die "invalid ancestor $KOBJFILE for $file"
 		KOBJFILE="$PARENT"
 	done
@@ -678,9 +683,10 @@ usage() {
 	echo "		--skip-compiler-check   Skip compiler version matching check" >&2
 	echo "		                        (not recommended)" >&2
 	echo "		-p, --profile-data      specify profile data for PGO (clang only)" >&2
+	echo "		-l, --lto               kernel is compiled with LTO" >&2
 }
 
-options="$(getopt -o ha:r:s:c:v:j:t:n:o:dRp: -l "help,archversion:,sourcerpm:,sourcedir:,config:,vmlinux:,jobs:,target:,name:,output:,oot-module:,oot-module-src:,debug,skip-gcc-check,skip-compiler-check,skip-cleanup,non-replace,profile-data" -- "$@")" || die "getopt failed"
+options="$(getopt -o ha:r:s:c:v:j:t:n:o:dRp:l -l "help,archversion:,sourcerpm:,sourcedir:,config:,vmlinux:,jobs:,target:,name:,output:,oot-module:,oot-module-src:,debug,skip-gcc-check,skip-compiler-check,skip-cleanup,non-replace,profile-data,lto" -- "$@")" || die "getopt failed"
 
 eval set -- "$options"
 
@@ -765,6 +771,9 @@ while [[ $# -gt 0 ]]; do
 	-p|--profile-data)
 		PROFILE_DATA="$(readlink -f "$2")"
 		shift
+		;;
+	-l|--lto)
+		USE_LTO=1
 		;;
 	*)
 		[[ "$1" = "--" ]] && shift && continue
