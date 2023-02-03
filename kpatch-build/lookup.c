@@ -563,15 +563,16 @@ bool is_exported(struct lookup_table *table, char *name)
 }
 
 static bool lookup_global_symbol(struct lookup_table *table, char *name,
-				 struct lookup_result *result)
+				 struct lookup_result *result, bool also_check_local)
 {
 	struct object_symbol *sym;
 	int i;
 
 	memset(result, 0, sizeof(*result));
 	for_each_obj_symbol(i, sym, table) {
-		if ((sym->bind == STB_GLOBAL || sym->bind == STB_WEAK) &&
-		    !strcmp(sym->name, name)) {
+		if (!also_check_local && sym->bind == STB_LOCAL)
+			continue;
+		if (!strcmp(sym->name, name)) {
 
 			if (result->objname)
 				ERROR("duplicate global symbol found for %s", name);
@@ -594,7 +595,10 @@ bool lookup_symbol(struct lookup_table *table, struct symbol *sym,
 	if (lookup_local_symbol(table, sym, result))
 		return true;
 
-	if (lookup_global_symbol(table, sym->name, result))
+	if (lookup_global_symbol(table, sym->name, result, false))
+		return true;
+
+	if (lookup_global_symbol(table, sym->name, result, true))
 		return true;
 
 	return lookup_exported_symbol(table, sym->name, result);
