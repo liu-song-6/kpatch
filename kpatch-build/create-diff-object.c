@@ -2890,6 +2890,7 @@ static void kpatch_mark_ignored_sections(struct kpatch_elf *kelf)
 		if (!strncmp(sec->name, ".discard", 8) ||
 		    !strncmp(sec->name, ".rela.discard", 13) ||
 		    !strncmp(sec->name, ".llvm_addrsig", 13) ||
+		    !strncmp(sec->name, ".rel.llvm.call-graph-profile", 28) ||
 		    !strncmp(sec->name, ".llvm.", 6))
 			sec->ignore = 1;
 
