@@ -1332,6 +1332,9 @@ fi
 
 if [[ -n "$CONFIG_LTO_CLANG" ]]; then
 	DIFF_OBJS="$TEMPDIR/thinlto_objs"
+
+	# Get the objtool command line, so we can run it on the thinlto files
+	OBJTOOL_CMD=$(grep -o -e "/tools/objtool/objtool .*" "$BUILDDIR"/.vmlinux.o.cmd  | sed 's/vmlinux.o//')
 else
 	DIFF_OBJS="$TEMPDIR/changed_objs"
 fi
@@ -1434,6 +1437,13 @@ for i in $FILES; do
 			# skip .thinlto file without any functions
 			num_func=$("$READELF" --symbols "orig/$i" | grep -c FUNC)
 			[[ $num_func -eq 0 ]] && continue
+			if [[ $i = vmlinux.o.* ]] ; then
+				eval "$BUILDDIR/$OBJTOOL_CMD orig/$i"
+				eval "$BUILDDIR/$OBJTOOL_CMD patched/$i"
+			else
+				eval "$BUILDDIR/$OBJTOOL_CMD --module orig/$i"
+				eval "$BUILDDIR/$OBJTOOL_CMD --module patched/$i"
+			fi
 		fi
 
 		# create-diff-object orig.o patched.o parent-name parent-symtab
