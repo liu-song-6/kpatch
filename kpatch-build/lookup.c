@@ -107,6 +107,8 @@ static bool locals_match(struct lookup_table *table, int idx,
 		if (table_sym->type != STT_FUNC && table_sym->type != STT_OBJECT)
 			continue;
 
+		if (maybe_discarded_sym(table_sym->name))
+			continue;
 		found = 0;
 		sym = file_sym;
 		list_for_each_entry_continue(sym, sym_list, list) {
@@ -115,6 +117,8 @@ static bool locals_match(struct lookup_table *table, int idx,
 			if (sym->bind != STB_LOCAL)
 				continue;
 
+			if (maybe_discarded_sym(sym->name))
+				continue;
 			if (sym->type == table_sym->type &&
 			    !strcmp(sym->name, table_sym->name)) {
 				found = 1;
