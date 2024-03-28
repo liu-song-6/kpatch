@@ -85,6 +85,8 @@ static bool maybe_discarded_sym(const char *name)
 	    strstr(name, "__addressable_") ||
 	    strstr(name, "__UNIQUE_ID_") ||
 	    !strncmp(name, ".L.str", 6) ||
+	    !strncmp(name, "__pfx_", 6) ||
+	    !strncmp(name, "__cfi_", 6) ||
 	    is_ubsan_sec(name))
 		return true;
 
@@ -126,8 +128,10 @@ static bool locals_match(struct lookup_table *table, int idx,
 			}
 		}
 
-		if (!found)
+		if (!found) {
+			fprintf(stderr, "%s cannot find table_sym %s\n", __func__, table_sym->name);
 			return false;
+		}
 	}
 
 	sym = file_sym;
@@ -162,8 +166,11 @@ static bool locals_match(struct lookup_table *table, int idx,
 			}
 		}
 
-		if (!found)
+		if (!found) {
+			fprintf(stderr, "%s cannot find sym %s\n", __func__, sym->name);
+
 			return false;
+		}
 	}
 
 	return true;

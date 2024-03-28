@@ -1449,9 +1449,14 @@ for i in $FILES; do
 
 		# create-diff-object orig.o patched.o parent-name parent-symtab
 		#		     Module.symvers patch-mod-name output.o
+		echo "$TOOLSDIR"/create-diff-object $CDO_FLAGS "orig/$i" "patched/$i" "$KOBJFILE_NAME" \
+			"$SYMTAB" "$SYMVERS_FILE" "${MODNAME//-/_}" \
+			"output/$i" 2>&1 | logger 1
+
 		"$TOOLSDIR"/create-diff-object $CDO_FLAGS "orig/$i" "patched/$i" "$KOBJFILE_NAME" \
 			"$SYMTAB" "$SYMVERS_FILE" "${MODNAME//-/_}" \
 			"output/$i" 2>&1 | logger 1
+
 		check_pipe_status create-diff-object
 		# create-diff-object returns 3 if no functional change is found
 		[[ "$rc" -eq 0 ]] || [[ "$rc" -eq 3 ]] || ERROR="$((ERROR + 1))"
