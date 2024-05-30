@@ -1164,9 +1164,9 @@ declare -a MAKEVARS
 if [[ -n "$CONFIG_CC_IS_CLANG" ]]; then
 	MAKEVARS+=("CC=${KPATCH_CC_PREFIX}${CLANG}")
 	MAKEVARS+=("HOSTCC=clang")
+	MAKEVARS+=("LLVM=1")
 	if [[ -n "$CONFIG_PGO_CLANG" ]]; then
 		MAKEVARS+=("CFLAGS_PGO_CLANG=-fprofile-use=$PROFILE_DATA")
-		MAKEVARS+=("LLVM=1")
 	fi
 else
 	MAKEVARS+=("CC=${KPATCH_CC_PREFIX}${GCC}")
