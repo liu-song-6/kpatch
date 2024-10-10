@@ -136,6 +136,8 @@ struct rela *find_rela_by_offset(struct section *relasec, unsigned int offset)
 unsigned int absolute_rela_type(struct kpatch_elf *kelf)
 {
 	switch(kelf->arch) {
+	case AARCH64:
+		return R_AARCH64_ABS64;
 	case PPC64:
 		return R_PPC64_ADDR64;
 	case X86_64:
@@ -205,6 +207,7 @@ long rela_target_offset(struct kpatch_elf *kelf, struct section *relasec,
 	struct section *sec = relasec->base;
 
 	switch(kelf->arch) {
+	case AARCH64:
 	case PPC64:
 		add_off = 0;
 		break;
@@ -254,6 +257,8 @@ unsigned int insn_length(struct kpatch_elf *kelf, void *addr)
 	char *insn = addr;
 
 	switch(kelf->arch) {
+	case AARCH64:
+		return 4;
 
 	case X86_64:
 		insn_init(&decoded_insn, addr, 1);
@@ -584,6 +589,9 @@ struct kpatch_elf *kpatch_elf_open(const char *name)
 	if (!gelf_getehdr(kelf->elf, &ehdr))
 		ERROR("gelf_getehdr");
 	switch (ehdr.e_machine) {
+	case EM_AARCH64:
+		kelf->arch = AARCH64;
+		break;
 	case EM_PPC64:
 		kelf->arch = PPC64;
 		break;
