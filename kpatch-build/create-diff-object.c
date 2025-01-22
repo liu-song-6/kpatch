@@ -265,6 +265,8 @@ static void kpatch_bundle_symbols(struct kpatch_elf *kelf)
 				expected_offset = sym->pfx->sym.st_size;
 			else if (is_gcc6_localentry_bundled_sym(kelf, sym))
 				expected_offset = 8;
+			else if (kelf->arch == AARCH64)
+				expected_offset = (unsigned int)sym->sym.st_value;
 			else
 				expected_offset = 0;
 
