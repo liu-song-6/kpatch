@@ -955,6 +955,11 @@ static void kpatch_compare_correlated_symbol(struct symbol *sym)
 {
 	struct symbol *sym1 = sym, *sym2 = sym->twin;
 
+	if (strncmp(sym->name, ".Ltmp", 5) == 0) {
+		sym->status = SAME;
+		return;
+	}
+
 	if (sym1->sym.st_info != sym2->sym.st_info ||
 	    (sym1->sec && !sym2->sec) ||
 	    (sym2->sec && !sym1->sec))
