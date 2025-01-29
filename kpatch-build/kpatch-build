@@ -1241,7 +1241,13 @@ if [[ -n "$CONFIG_LTO_CLANG" ]]; then
 
 	# update Makefile so that ld.lld generate vmlinux.o.thinlto.o* files for vmlinux.o
 	[[ -f "$TEMPDIR/Makefile" ]] || backup_kernel_file "Makefile"
-        sed -i "/CONFIG_LTO_CLANG_THIN/a KBUILD_LDFLAGS += --lto-obj-path=vmlinux.o.thinlto.o" "$KERNEL_SRCDIR"/Makefile
+	# For older kernel (<=v6.9.4), replace the --thinlto-cache-dir line with --lto-obj-path=...
+	# For newer kernel (>=v6.9.5), add the --lto-obj-path=... line after CONFIG_LTO_CLANG_THIN
+	if grep -q thinlto-cache-dir "$KERNEL_SRCDIR"/Makefile ; then
+		sed -i "s/--thinlto-cache-dir=\$(extmod_prefix).thinlto-cache/--lto-obj-path=vmlinux.o.thinlto.o/g" "$KERNEL_SRCDIR"/Makefile
+	else
+		sed -i "/CONFIG_LTO_CLANG_THIN/a KBUILD_LDFLAGS += --lto-obj-path=vmlinux.o.thinlto.o" "$KERNEL_SRCDIR"/Makefile
+	fi
 
 	# update scripts/Makefile.build so that ld.lld generate XX.o.thinlto.o* files for modules
 	backup_kernel_file "scripts/Makefile.lib"
