@@ -1251,9 +1251,11 @@ if [[ -n "$CONFIG_LTO_CLANG" ]]; then
 		sed -i "/CONFIG_LTO_CLANG_THIN/a KBUILD_LDFLAGS += --lto-obj-path=vmlinux.o.thinlto.o" "$KERNEL_SRCDIR"/Makefile
 	fi
 
-	# update scripts/Makefile.build so that ld.lld generate XX.o.thinlto.o* files for modules
+	# update scripts/Makefile.[build|lib] so that ld.lld generate XX.o.thinlto.o* files for modules
 	backup_kernel_file "scripts/Makefile.lib"
+	backup_kernel_file "scripts/Makefile.build"
 	sed -i "s/\$(ld_flags) -r/\$(ld_flags) --lto-obj-path=\$@.thinlto.o -r/g" "$KERNEL_SRCDIR"/scripts/Makefile.lib
+	sed -i "s/\$(ld_flags)/\$(ld_flags) --lto-obj-path=\$@.thinlto.o/g" "$KERNEL_SRCDIR"/scripts/Makefile.build
 
 	export KPATCH_CC_LTO=1
 fi
