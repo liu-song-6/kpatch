@@ -82,11 +82,12 @@ elif [[ "$TOOLCHAINCMD" =~ ^(.*-)?ld || "$TOOLCHAINCMD" =~ ^(.*-)?ld.lld ]] ; th
 					;;
 				*/.tmp_*.o)
 					# .tmp_*.o is used for single file modules.
-					# See "cmd_ld_single_m" in scripts/Makefile.build.
+					# See "cmd_ld_multi_m" in scripts/Makefile.build.
 					if [[ $KPATCH_CC_LTO -eq 1 ]] ; then
 						mkdir -p "$KPATCH_GCC_TEMPDIR/orig/$(dirname "$relobj")"
-						cp "${obj/.tmp_/}".thinlto.o* "$KPATCH_GCC_TEMPDIR/orig/$(dirname "$relobj")"
-						echo "${obj/.tmp_/}".thinlto.o* >> "$KPATCH_GCC_TEMPDIR/thinlto_objs"
+						# The thinlto.o file may not always exist. Only get those actual exist.
+						cp "${obj/.tmp_/}".thinlto.o* "$KPATCH_GCC_TEMPDIR/orig/$(dirname "$relobj")" && \
+							echo "${obj/.tmp_/}".thinlto.o* >> "$KPATCH_GCC_TEMPDIR/thinlto_objs"
 					fi
 					break
 					;;
