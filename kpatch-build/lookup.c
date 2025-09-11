@@ -481,7 +481,7 @@ static bool lookup_local_symbol(struct lookup_table *table,
 				struct lookup_result *result)
 {
 	struct object_symbol *sym;
-	unsigned long sympos = 0;
+	unsigned long sympos = 0, symcnt = 0;
 	int i, in_file = 0;
 	bool found = false;
 
@@ -522,12 +522,18 @@ static bool lookup_local_symbol(struct lookup_table *table,
 	 * calcuate the actual sympos.
 	 */
 	for_each_obj_symbol(i, sym, table) {
-		if (sym->bind == STB_LOCAL &&
-		    !strcmp(sym->name, lookup_sym->name) &&
-		    sym->addr <= result->addr)
-			sympos++;
+		if (!strcmp(sym->name, lookup_sym->name)) {
+			symcnt++;
+			if (sym->addr <= result->addr)
+				sympos++;
+		}
 	}
-	result->sympos = sympos;
+
+	if (symcnt == 1)
+		result->sympos = 0;
+	else
+		result->sympos = sympos;
+
 	return true;
 }
 
