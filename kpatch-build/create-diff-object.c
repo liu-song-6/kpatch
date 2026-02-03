@@ -1412,6 +1412,9 @@ static bool kpatch_is_normal_static_local(struct symbol *sym)
 	if (is_special_static(sym))
 		return false;
 
+	if (strstr(sym->name, "._alloc_tag"))
+		return false;
+
 	return true;
 }
 
