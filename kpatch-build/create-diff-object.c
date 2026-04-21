@@ -2474,7 +2474,7 @@ static bool jump_table_group_filter(struct lookup_table *lookup,
 				    unsigned int group_size)
 {
 	struct rela *code = NULL, *key = NULL, *rela;
-	bool tracepoint = false, dynamic_debug = false;
+	bool tracepoint = false, dynamic_debug = false, mem_alloc_profiling = false;
 	struct lookup_result symbol;
 	int i = 0;
 
@@ -2503,21 +2503,30 @@ static bool jump_table_group_filter(struct lookup_table *lookup,
 	if (is_dynamic_debug_symbol(key->sym))
 		dynamic_debug = true;
 
+	if (!strcmp(key->sym->name, "mem_alloc_profiling_key"))
+		mem_alloc_profiling = true;
+
+	/*
+	 * With CONFIG_HAVE_JUMP_LABEL_HACK, the compiler emits JMP for all
+	 * static branches and objtool converts NOP-type ones post-link.
+	 * Jump table entries from patched functions get their key relas
+	 * converted to KLP format (.klp.rela.vmlinux.__jump_table), which
+	 * objtool cannot resolve.  This causes objtool to abort processing
+	 * the entire __jump_table section, leaving scaffold entries
+	 * unconverted (JMP instead of NOP) and triggering a BUG_ON at
+	 * module load.
+	 *
+	 * Inert tracepoints, dynamic debug printks, and mem_alloc_profiling
+	 * entries are harmless to skip.
+	 */
+	if (tracepoint || dynamic_debug || mem_alloc_profiling)
+		return false;
+
 	if (KLP_ARCH) {
 		/*
 		 * On older kernels (with .klp.arch support), jump labels
 		 * aren't supported at all.  Error out when they occur in a
-		 * replacement function, with the exception of tracepoints and
-		 * dynamic debug printks.  An inert tracepoint or printk is
-		 * harmless enough, but a broken jump label can cause
-		 * unexpected behavior.
-		 */
-		if (tracepoint || dynamic_debug)
-			return false;
-
-		/*
-		 * This will be upgraded to an error after all jump labels have
-		 * been reported.
+		 * replacement function.
 		 */
 		log_error("Found a jump label at %s()+0x%lx, using key %s.  Jump labels aren't supported with this kernel.  Use static_key_enabled() instead.\n",
 			  code->sym->name, code->addend, key->sym->name);
@@ -2540,15 +2549,6 @@ static bool jump_table_group_filter(struct lookup_table *lookup,
 	    strcmp(symbol.objname, "vmlinux")) {
 
 		/* The static key lives in a module -- not supported */
-
-		/* Inert tracepoints and dynamic debug printks are harmless */
-		if (tracepoint || dynamic_debug)
-			return false;
-
-		/*
-		 * This will be upgraded to an error after all jump label
-		 * errors have been reported.
-		 */
 		log_error("Found a jump label at %s()+0x%lx, using key %s, which is defined in a module.  Use static_key_enabled() instead.\n",
 			  code->sym->name, code->addend, key->sym->name);
 		jump_label_errors++;
