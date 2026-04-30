@@ -1226,6 +1226,17 @@ static void kpatch_correlate_symbols(struct kpatch_elf *kelf_orig,
 			    !strncmp(sym_orig->name, ".LC", 3))
 				continue;
 
+			/*
+			 * .Ltmp* symbols are LLVM-generated temporaries
+			 * used for branch targets and cold-path labels.
+			 * ThinLTO can shuffle them between sections across
+			 * builds, so skip correlation to avoid false
+			 * "symbol changed sections" errors.
+			 */
+			if (sym_orig->type == STT_NOTYPE &&
+			    !strncmp(sym_orig->name, ".Ltmp", 5))
+				continue;
+
 			if (kpatch_is_mapping_symbol(kelf_orig, sym_orig))
 				continue;
 
